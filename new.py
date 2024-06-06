@@ -1,9 +1,29 @@
 import cv2
 import numpy as np
+import requests
 from skimage.metrics import structural_similarity as ssim
+from io import BytesIO
+from PIL import Image
+
+def download_image(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        image = Image.open(BytesIO(response.content))
+        image = image.convert('L')  # Convert to grayscale
+        image_np = np.array(image)
+        return image_np
+    else:
+        raise Exception(f"Failed to download image from URL: {url}")
 
 def preprocess_image(image_path):
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if image_path.startswith('http://') or image_path.startswith('https://'):
+        image = download_image(image_path)
+    else:
+        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    
+    if image is None:
+        raise ValueError(f"Could not read image from path: {image_path}")
+
     _, binary_image = cv2.threshold(image, 128, 255, cv2.THRESH_BINARY)
     resized_image = cv2.resize(binary_image, (128, 64))  # Resize to a standard size
     return resized_image
@@ -32,8 +52,8 @@ def verify_signature(image_path1, image_path2, threshold=0.9):
         print("Not Verified")
 
 # Input image paths
-image_path1 = 'path/to/first_signature.png'
-image_path2 = 'path/to/second_signature.png'
+image_path1 = 'https://github.com/chamarasab/imagerecognition/blob/main/signature/Page0001.jpg'
+image_path2 = 'https://github.com/chamarasab/imagerecognition/blob/main/signature/Page0002.jpg'
 
 # Verify the signatures
 verify_signature(image_path1, image_path2)
