@@ -8,12 +8,17 @@ from PIL import Image
 def download_image(url):
     response = requests.get(url)
     if response.status_code == 200:
-        image = Image.open(BytesIO(response.content))
-        image = image.convert('L')  # Convert to grayscale
-        image_np = np.array(image)
-        return image_np
+        if 'image' in response.headers['Content-Type']:
+            image = Image.open(BytesIO(response.content))
+            image = image.convert('L')  # Convert to grayscale
+            image_np = np.array(image)
+            return image_np
+        else:
+            with open("downloaded_content.html", "wb") as file:
+                file.write(response.content)
+            raise Exception(f"URL did not return an image. Content saved to 'downloaded_content.html'")
     else:
-        raise Exception(f"Failed to download image from URL: {url}")
+        raise Exception(f"Failed to download image from URL: {url}, status code: {response.status_code}")
 
 def preprocess_image(image_path):
     if image_path.startswith('http://') or image_path.startswith('https://'):
@@ -51,9 +56,9 @@ def verify_signature(image_path1, image_path2, threshold=0.9):
     else:
         print("Not Verified")
 
-# Input image paths
-image_path1 = 'https://github.com/chamarasab/imagerecognition/blob/main/signature/Page0001.jpg'
-image_path2 = 'https://github.com/chamarasab/imagerecognition/blob/main/signature/Page0002.jpg'
+# Input image paths (using raw content URLs)
+image_path1 = 'https://raw.githubusercontent.com/chamarasab/imagerecognition/main/signature/Page0001.jpg'
+image_path2 = 'https://raw.githubusercontent.com/chamarasab/imagerecognition/main/signature/Page0002.jpg'
 
 # Verify the signatures
 verify_signature(image_path1, image_path2)
